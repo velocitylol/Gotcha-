@@ -1,6 +1,3 @@
--- admin.lua
--- Full exploit script. Load via loadstring.
-
 print(">>> start")
 
 local Players = game:GetService("Players")
