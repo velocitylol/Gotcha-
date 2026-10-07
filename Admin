@@ -9,7 +9,7 @@ local plr = Players.LocalPlayer
 local pg = plr:WaitForChild("PlayerGui")
 print(">>> refs ok")
 
-for _, name in ipairs({"AdminUI", "RExploitUI", "RLoggerUI"}) do
+for _, name in ipairs({"AdminUI", "RExploitUI", "RLoggerUI", "InspectUI"}) do
     local old = pg:FindFirstChild(name)
     if old then old:Destroy() end
 end
@@ -17,57 +17,85 @@ end
 local gui = Instance.new("ScreenGui")
 gui.Name = "AdminUI"
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
 gui.Parent = pg
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 440, 0, 440)
-frame.Position = UDim2.new(0, 30, 0, 70)
+frame.Size = UDim2.new(0, 320, 0, 350)
+frame.Position = UDim2.new(0, 8, 0, 30)
 frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 frame.BorderSizePixel = 0
 frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 0, 26)
-title.Position = UDim2.new(0, 10, 0, 4)
+title.Size = UDim2.new(1, -140, 0, 20)
+title.Position = UDim2.new(0, 8, 0, 4)
 title.BackgroundTransparency = 1
 title.Text = "Admin Exploit"
 title.TextColor3 = Color3.fromRGB(220, 220, 240)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
-title.TextSize = 14
+title.TextSize = 12
 title.Parent = frame
 
+local copyBtn = Instance.new("TextButton")
+copyBtn.Size = UDim2.new(0, 60, 0, 20)
+copyBtn.Position = UDim2.new(1, -128, 0, 4)
+copyBtn.BackgroundColor3 = Color3.fromRGB(55, 110, 200)
+copyBtn.BorderSizePixel = 0
+copyBtn.Text = "Copy"
+copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 10
+copyBtn.Parent = frame
+Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 4)
+
+local saveBtn = Instance.new("TextButton")
+saveBtn.Size = UDim2.new(0, 60, 0, 20)
+saveBtn.Position = UDim2.new(1, -64, 0, 4)
+saveBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+saveBtn.BorderSizePixel = 0
+saveBtn.Text = "Save"
+saveBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+saveBtn.Font = Enum.Font.GothamBold
+saveBtn.TextSize = 10
+saveBtn.Parent = frame
+Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 4)
+
+-- log
 local log = Instance.new("ScrollingFrame")
-log.Size = UDim2.new(1, -20, 0, 220)
-log.Position = UDim2.new(0, 10, 0, 40)
+log.Size = UDim2.new(1, -16, 0, 130)
+log.Position = UDim2.new(0, 8, 0, 28)
 log.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
 log.BorderSizePixel = 0
-log.ScrollBarThickness = 4
+log.ScrollBarThickness = 3
 log.AutomaticCanvasSize = Enum.AutomaticSize.Y
 log.Parent = frame
 
 local ll = Instance.new("UIListLayout", log)
 ll.SortOrder = Enum.SortOrder.LayoutOrder
-ll.Padding = UDim.new(0, 2)
+ll.Padding = UDim.new(0, 1)
 local lp = Instance.new("UIPadding", log)
-lp.PaddingLeft = UDim.new(0, 6)
-lp.PaddingRight = UDim.new(0, 6)
-lp.PaddingTop = UDim.new(0, 6)
-lp.PaddingBottom = UDim.new(0, 6)
+lp.PaddingLeft = UDim.new(0, 4)
+lp.PaddingRight = UDim.new(0, 4)
+lp.PaddingTop = UDim.new(0, 4)
+lp.PaddingBottom = UDim.new(0, 4)
 
+-- button area
 local btnHolder = Instance.new("Frame")
-btnHolder.Size = UDim2.new(1, -20, 0, 150)
-btnHolder.Position = UDim2.new(0, 10, 0, 270)
+btnHolder.Size = UDim2.new(1, -16, 0, 158)
+btnHolder.Position = UDim2.new(0, 8, 0, 164)
 btnHolder.BackgroundTransparency = 1
 btnHolder.Parent = frame
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = UDim2.new(0.33, -4, 0, 34)
+grid.CellSize = UDim2.new(0.25, -3, 0, 32)
 grid.CellPadding = UDim2.new(0, 4, 0, 4)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = btnHolder
 
+-- log lines
 local lines = {}
 local function add(t, c)
     local l = Instance.new("TextLabel")
@@ -77,15 +105,19 @@ local function add(t, c)
     l.Text = tostring(t)
     l.TextColor3 = c or Color3.fromRGB(200, 200, 210)
     l.Font = Enum.Font.Code
-    l.TextSize = 11
+    l.TextSize = 10
     l.TextXAlignment = Enum.TextXAlignment.Left
     l.TextWrapped = true
     l.LayoutOrder = #lines + 1
     l.Parent = log
     lines[#lines + 1] = tostring(t)
     print(t)
+    task.defer(function()
+        log.CanvasPosition = Vector2.new(0, math.max(0, ll.AbsoluteContentSize.Y - log.AbsoluteSize.Y))
+    end)
 end
 
+-- remote finder
 local function fr(path, name)
     local node = RS
     for _, p in ipairs(path) do
@@ -113,33 +145,31 @@ R.UnlockPicks = fr(admPath, "UnlockAllPickaxes")
 
 local function fire(remote, ...)
     if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
-    local args = {...}
     local bits = {}
-    for i, v in ipairs(args) do
+    for i, v in ipairs({...}) do
         if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
     end
-    add("  FireServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
+    add("  Fire(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
     local ok, err = pcall(remote.FireServer, remote, ...)
-    if not ok then add("  err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
+    if not ok then add("  err " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
 end
 
 local function invoke(remote, ...)
     if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
-    local args = {...}
     local bits = {}
-    for i, v in ipairs(args) do
+    for i, v in ipairs({...}) do
         if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
     end
-    add("  InvokeServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
+    add("  Invoke(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
     local ok, r = pcall(remote.InvokeServer, remote, ...)
     if ok then add("  -> " .. tostring(r), Color3.fromRGB(140, 255, 140))
-    else add("  err: " .. tostring(r), Color3.fromRGB(255, 120, 120)) end
+    else add("  err " .. tostring(r), Color3.fromRGB(255, 120, 120)) end
 end
 
 local AMT = 1000000
 
 local buttons = {
-    {"AddCoins", function()
+    {"Coins", function()
         add(">> AddCoins", Color3.fromRGB(255, 220, 120))
         fire(R.AddCoins, AMT)
         fire(R.AddCoins, plr, AMT)
@@ -147,63 +177,63 @@ local buttons = {
         fire(R.AddCoins, {amount = AMT})
     end, Color3.fromRGB(180, 60, 60)},
 
-    {"Grant Admin", function()
+    {"Grant", function()
         add(">> GrantAdmin", Color3.fromRGB(255, 220, 120))
         fire(R.GrantAdmin)
         fire(R.GrantAdmin, plr)
     end, Color3.fromRGB(180, 60, 60)},
 
-    {"Req Admin", function()
+    {"ReqAdm", function()
         add(">> ReqAdmin", Color3.fromRGB(255, 220, 120))
         fire(R.ReqAdmin)
         fire(R.ReqAdmin, plr)
     end, Color3.fromRGB(140, 60, 140)},
 
-    {"Unlock VIP", function()
+    {"VIP", function()
         add(">> UnlockVIP", Color3.fromRGB(255, 220, 120))
         fire(R.UnlockVIP)
         fire(R.UnlockVIP, plr)
     end, Color3.fromRGB(180, 100, 40)},
 
-    {"GiveCash", function()
+    {"Cash", function()
         add(">> GiveCash", Color3.fromRGB(255, 220, 120))
         invoke(R.GiveCash, AMT)
         invoke(R.GiveCash, plr, AMT)
     end, Color3.fromRGB(60, 140, 60)},
 
-    {"GiveItem", function()
+    {"Item", function()
         add(">> GiveItem", Color3.fromRGB(255, 220, 120))
         invoke(R.GiveItem, "Needoh", 1)
     end, Color3.fromRGB(60, 140, 60)},
 
-    {"GiveCrate", function()
+    {"Crate", function()
         add(">> GiveCrate", Color3.fromRGB(255, 220, 120))
         invoke(R.GiveCrate, 1)
     end, Color3.fromRGB(60, 140, 60)},
 
-    {"GiveRebirth", function()
+    {"Rebirth", function()
         add(">> GiveRebirth", Color3.fromRGB(255, 220, 120))
         invoke(R.GiveRebirth, AMT)
     end, Color3.fromRGB(60, 140, 60)},
 
-    {"GiveBoost", function()
+    {"Boost", function()
         add(">> GiveBoost", Color3.fromRGB(255, 220, 120))
         invoke(R.GiveBoost, "Speed", 100)
     end, Color3.fromRGB(60, 140, 60)},
 
-    {"All Picks", function()
-        add(">> UnlockAllPickaxes", Color3.fromRGB(255, 220, 120))
+    {"Picks", function()
+        add(">> UnlockPicks", Color3.fromRGB(255, 220, 120))
         invoke(R.UnlockPicks)
     end, Color3.fromRGB(60, 140, 60)},
 
-    {"ForceItem", function()
+    {"Force", function()
         add(">> ForceGiveItem", Color3.fromRGB(255, 220, 120))
         fire(R.ForceItem)
         fire(R.ForceItem, plr)
     end, Color3.fromRGB(160, 80, 80)},
 
-    {"ExecAbuse", function()
-        add(">> ExecuteAdminAbuse", Color3.fromRGB(255, 220, 120))
+    {"Abuse", function()
+        add(">> ExecAbuse", Color3.fromRGB(255, 220, 120))
         fire(R.ExecAbuse)
         fire(R.ExecAbuse, plr)
     end, Color3.fromRGB(160, 80, 80)},
@@ -216,13 +246,72 @@ for _, b in ipairs(buttons) do
     btn.Text = b[1]
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
+    btn.TextSize = 10
     btn.TextWrapped = true
     btn.Parent = btnHolder
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
     btn.MouseButton1Click:Connect(function()
         local ok, err = pcall(b[2])
-        if not ok then add("click err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
+        if not ok then add("click err " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
+    end)
+end
+
+-- clipboard
+local function getClip()
+    if type(setclipboard) == "function" then return setclipboard end
+    if type(syn) == "table" and type(syn.set_clipboard) == "function" then return syn.set_clipboard end
+    if type(getgenv) == "function" then
+        local g = getgenv()
+        if type(g.setclipboard) == "function" then return g.setclipboard end
+    end
+    return nil
+end
+
+copyBtn.MouseButton1Click:Connect(function()
+    local text = table.concat(lines, "\n")
+    local fn = getClip()
+    if fn then
+        local ok = pcall(fn, text)
+        copyBtn.Text = ok and "OK" or "Fail"
+    else
+        copyBtn.Text = "NoCB"
+    end
+    task.delay(1.5, function() copyBtn.Text = "Copy" end)
+end)
+
+saveBtn.MouseButton1Click:Connect(function()
+    local text = table.concat(lines, "\n")
+    if type(writefile) == "function" then
+        local fname = "admin_" .. tostring(os.time()) .. ".txt"
+        local ok = pcall(writefile, fname, text)
+        saveBtn.Text = ok and "OK" or "Fail"
+    else
+        saveBtn.Text = "NoWF"
+    end
+    task.delay(1.5, function() saveBtn.Text = "Save" end)
+end)
+
+-- drag
+do
+    local d, ds, sp
+    title.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+            d = true; ds = i.Position; sp = frame.Position
+        end
+    end)
+    title.InputChanged:Connect(function(i)
+        if d and (i.UserInputType == Enum.UserInputType.MouseMovement
+            or i.UserInputType == Enum.UserInputType.Touch) then
+            local v = i.Position - ds
+            frame.Position = UDim2.new(sp.X.Scale, sp.X.Offset + v.X, sp.Y.Scale, sp.Y.Offset + v.Y)
+        end
+    end)
+    title.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+            d = false
+        end
     end)
 end
 
@@ -231,6 +320,6 @@ local found, miss = 0, 0
 for n, r in pairs(R) do
     if r then found = found + 1 else miss = miss + 1; add("MISSING " .. n, Color3.fromRGB(255, 120, 120)) end
 end
-add("remotes: " .. found .. " / " .. miss, Color3.fromRGB(255, 220, 120))
+add("remotes " .. found .. "/" .. (found + miss), Color3.fromRGB(255, 220, 120))
 add("click a button", Color3.fromRGB(255, 220, 120))
 print(">>> READY")
