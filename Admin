@@ -1,101 +1,183 @@
--- admin.lua
--- Full exploit script. Load via loadstring.
-
 print(">>> start")
 
-local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
-local plr = Players.LocalPlayer
+local plr = game:GetService("Players").LocalPlayer
 local pg = plr:WaitForChild("PlayerGui")
-print(">>> refs ok")
 
-for _, name in ipairs({"AdminUI", "RExploitUI", "RLoggerUI", "InspectUI"}) do
-    local old = pg:FindFirstChild(name)
-    if old then old:Destroy() end
+for _, n in ipairs({"CapUI", "ScanUI", "ExpUI", "DumpUI"}) do
+    local o = pg:FindFirstChild(n)
+    if o then o:Destroy() end
 end
 
+local folder = RS:FindFirstChild("Remotes")
+if not folder then warn("no Remotes folder") return end
+
+-- one target per click, single fire
+local targets = {
+    "ClaimFreeGift",
+    "ClaimOfflineReward",
+    "ClaimIndexReward",
+    "ClaimAreaIndexReward",
+    "ClaimFullIndexReward",
+    "ClaimAllIndexRewards",
+    "CashBoost",
+    "BoxLuck",
+    "BoxSizeBoost",
+    "SellPets",
+    "RequestShopPurchase",
+    "RequestTrailPurchase",
+    "BossShopBuy",
+    "UpgradeTreadmill",
+    "UpgradeBase",
+    "SpeedOffer",
+    "PromptTreadmillRobuxUpgrade",
+    "PromptBaseRobuxUpgrade",
+}
+
+-- read-only RFs for state
+local readRFs = {
+    "FusePets",
+    "MutatePet",
+}
+
+-- ============ UI ============
 local gui = Instance.new("ScreenGui")
-gui.Name = "AdminUI"
+gui.Name = "CapUI"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = pg
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 320, 0, 350)
-frame.Position = UDim2.new(0, 8, 0, 30)
-frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-frame.BorderSizePixel = 0
-frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0, 36, 0, 36)
+toggle.Position = UDim2.new(0, 10, 0.5, -18)
+toggle.BackgroundColor3 = Color3.fromRGB(55, 110, 200)
+toggle.BackgroundTransparency = 0.5
+toggle.BorderSizePixel = 0
+toggle.Text = "T"
+toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggle.TextTransparency = 0.5
+toggle.Font = Enum.Font.GothamBold
+toggle.TextSize = 16
+toggle.ZIndex = 50
+toggle.Parent = gui
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 18)
+
+local fr = Instance.new("Frame")
+fr.Name = "Main"
+fr.Size = UDim2.new(0, 420, 0, 500)
+fr.Position = UDim2.new(0.5, -210, 0.5, -250)
+fr.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+fr.BorderSizePixel = 0
+fr.ZIndex = 2
+fr.Parent = gui
+Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 6)
+local stroke = Instance.new("UIStroke", fr)
+stroke.Color = Color3.fromRGB(60, 60, 90)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -140, 0, 20)
+title.Size = UDim2.new(1, -240, 0, 22)
 title.Position = UDim2.new(0, 8, 0, 4)
 title.BackgroundTransparency = 1
-title.Text = "Admin Exploit"
+title.Text = "PetSim  [drag]"
 title.TextColor3 = Color3.fromRGB(220, 220, 240)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
 title.TextSize = 12
-title.Parent = frame
+title.ZIndex = 3
+title.Parent = fr
 
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(0, 60, 0, 20)
-copyBtn.Position = UDim2.new(1, -128, 0, 4)
-copyBtn.BackgroundColor3 = Color3.fromRGB(55, 110, 200)
-copyBtn.BorderSizePixel = 0
-copyBtn.Text = "Copy"
-copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 10
-copyBtn.Parent = frame
-Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 4)
+local function mkBtn(t, x, c, parent)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 70, 0, 22)
+    b.Position = UDim2.new(1, x, 0, 4)
+    b.BackgroundColor3 = c
+    b.BorderSizePixel = 0
+    b.Text = t
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 11
+    b.ZIndex = 3
+    b.Parent = parent or fr
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    return b
+end
 
-local saveBtn = Instance.new("TextButton")
-saveBtn.Size = UDim2.new(0, 60, 0, 20)
-saveBtn.Position = UDim2.new(1, -64, 0, 4)
-saveBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-saveBtn.BorderSizePixel = 0
-saveBtn.Text = "Save"
-saveBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.TextSize = 10
-saveBtn.Parent = frame
-Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 4)
+local copyB = mkBtn("Copy", -176, Color3.fromRGB(55, 110, 200))
+local txtB  = mkBtn("Text", -102, Color3.fromRGB(140, 90, 40))
+local saveB = mkBtn("Save", -28,  Color3.fromRGB(55, 55, 70))
 
--- log
-local log = Instance.new("ScrollingFrame")
-log.Size = UDim2.new(1, -16, 0, 130)
-log.Position = UDim2.new(0, 8, 0, 28)
-log.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
-log.BorderSizePixel = 0
-log.ScrollBarThickness = 3
-log.AutomaticCanvasSize = Enum.AutomaticSize.Y
-log.Parent = frame
-
-local ll = Instance.new("UIListLayout", log)
-ll.SortOrder = Enum.SortOrder.LayoutOrder
-ll.Padding = UDim.new(0, 1)
-local lp = Instance.new("UIPadding", log)
-lp.PaddingLeft = UDim.new(0, 4)
-lp.PaddingRight = UDim.new(0, 4)
-lp.PaddingTop = UDim.new(0, 4)
-lp.PaddingBottom = UDim.new(0, 4)
-
--- button area
-local btnHolder = Instance.new("Frame")
-btnHolder.Size = UDim2.new(1, -16, 0, 158)
-btnHolder.Position = UDim2.new(0, 8, 0, 164)
-btnHolder.BackgroundTransparency = 1
-btnHolder.Parent = frame
+local btnArea = Instance.new("Frame")
+btnArea.Size = UDim2.new(1, -16, 0, 200)
+btnArea.Position = UDim2.new(0, 8, 0, 30)
+btnArea.BackgroundTransparency = 1
+btnArea.ZIndex = 3
+btnArea.Parent = fr
 
 local grid = Instance.new("UIGridLayout")
-grid.CellSize = UDim2.new(0.25, -3, 0, 32)
-grid.CellPadding = UDim2.new(0, 4, 0, 4)
+grid.CellSize = UDim2.new(0.33, -3, 0, 26)
+grid.CellPadding = UDim2.new(0, 4, 0, 3)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
-grid.Parent = btnHolder
+grid.Parent = btnArea
 
--- log lines
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -16, 1, -244)
+scroll.Position = UDim2.new(0, 8, 0, 236)
+scroll.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 3
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.ZIndex = 3
+scroll.Parent = fr
+
+local ll = Instance.new("UIListLayout", scroll)
+ll.SortOrder = Enum.SortOrder.LayoutOrder
+ll.Padding = UDim.new(0, 1)
+local lp = Instance.new("UIPadding", scroll)
+lp.PaddingLeft = UDim.new(0, 4); lp.PaddingRight = UDim.new(0, 4)
+lp.PaddingTop = UDim.new(0, 4); lp.PaddingBottom = UDim.new(0, 4)
+
+-- text modal
+local modal = Instance.new("Frame")
+modal.Size = fr.Size
+modal.Position = fr.Position
+modal.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+modal.BorderSizePixel = 0
+modal.Visible = false
+modal.ZIndex = 10
+modal.Parent = gui
+Instance.new("UICorner", modal).CornerRadius = UDim.new(0, 6)
+
+local cbtn = Instance.new("TextButton")
+cbtn.Size = UDim2.new(0, 70, 0, 22)
+cbtn.Position = UDim2.new(1, -78, 0, 4)
+cbtn.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+cbtn.BorderSizePixel = 0
+cbtn.Text = "Close"
+cbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+cbtn.Font = Enum.Font.GothamBold
+cbtn.TextSize = 11
+cbtn.ZIndex = 11
+cbtn.Parent = modal
+Instance.new("UICorner", cbtn).CornerRadius = UDim.new(0, 4)
+cbtn.MouseButton1Click:Connect(function() modal.Visible = false end)
+
+local bigBox = Instance.new("TextBox")
+bigBox.Size = UDim2.new(1, -16, 1, -34)
+bigBox.Position = UDim2.new(0, 8, 0, 30)
+bigBox.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+bigBox.BorderSizePixel = 0
+bigBox.TextColor3 = Color3.fromRGB(200, 200, 210)
+bigBox.Font = Enum.Font.Code
+bigBox.TextSize = 10
+bigBox.TextXAlignment = Enum.TextXAlignment.Left
+bigBox.TextYAlignment = Enum.TextYAlignment.Top
+bigBox.TextWrapped = true
+bigBox.ClearTextOnFocus = false
+bigBox.MultiLine = true
+bigBox.Text = ""
+bigBox.ZIndex = 11
+bigBox.Parent = modal
+
 local lines = {}
 local function add(t, c)
     local l = Instance.new("TextLabel")
@@ -109,186 +191,20 @@ local function add(t, c)
     l.TextXAlignment = Enum.TextXAlignment.Left
     l.TextWrapped = true
     l.LayoutOrder = #lines + 1
-    l.Parent = log
+    l.ZIndex = 3
+    l.Parent = scroll
     lines[#lines + 1] = tostring(t)
-    print(t)
     task.defer(function()
-        log.CanvasPosition = Vector2.new(0, math.max(0, ll.AbsoluteContentSize.Y - log.AbsoluteSize.Y))
+        scroll.CanvasPosition = Vector2.new(0, math.max(0, ll.AbsoluteContentSize.Y - scroll.AbsoluteSize.Y))
     end)
 end
 
--- remote finder
-local function fr(path, name)
-    local node = RS
-    for _, p in ipairs(path) do
-        node = node:FindFirstChild(p)
-        if not node then return nil end
-    end
-    return node:FindFirstChild(name)
-end
-
-local R = {
-    AddCoins    = fr({"AdminRemotes"}, "AddCoins_DevBypass"),
-    GrantAdmin  = fr({"AdminRemotes"}, "GrantAdminRights"),
-    ReqAdmin    = fr({"AdminRemotes"}, "RequestAdminAccess"),
-    UnlockVIP   = fr({"AdminRemotes"}, "UnlockVIP_Free"),
-    ForceItem   = fr({"AdminRemotes"}, "ForceGiveItem"),
-    ExecAbuse   = fr({"AdminRemotes"}, "ExecuteAdminAbuse"),
-}
-local admPath = {"Library","Knit","Knit","Services","AdminService","RF"}
-R.GiveCash    = fr(admPath, "GiveCash")
-R.GiveItem    = fr(admPath, "GiveItem")
-R.GiveCrate   = fr(admPath, "GiveCrate")
-R.GiveRebirth = fr(admPath, "GiveRebirth")
-R.GiveBoost   = fr(admPath, "GiveBoost")
-R.UnlockPicks = fr(admPath, "UnlockAllPickaxes")
-
-local function fire(remote, ...)
-    if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
-    local bits = {}
-    for i, v in ipairs({...}) do
-        if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
-    end
-    add("  Fire(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
-    local ok, err = pcall(remote.FireServer, remote, ...)
-    if not ok then add("  err " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
-end
-
-local function invoke(remote, ...)
-    if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
-    local bits = {}
-    for i, v in ipairs({...}) do
-        if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
-    end
-    add("  Invoke(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
-    local ok, r = pcall(remote.InvokeServer, remote, ...)
-    if ok then add("  -> " .. tostring(r), Color3.fromRGB(140, 255, 140))
-    else add("  err " .. tostring(r), Color3.fromRGB(255, 120, 120)) end
-end
-
-local AMT = 1000000
-
-local buttons = {
-    {"Coins", function()
-        add(">> AddCoins", Color3.fromRGB(255, 220, 120))
-        fire(R.AddCoins, AMT)
-        fire(R.AddCoins, plr, AMT)
-        fire(R.AddCoins, AMT, plr)
-        fire(R.AddCoins, {amount = AMT})
-    end, Color3.fromRGB(180, 60, 60)},
-
-    {"Grant", function()
-        add(">> GrantAdmin", Color3.fromRGB(255, 220, 120))
-        fire(R.GrantAdmin)
-        fire(R.GrantAdmin, plr)
-    end, Color3.fromRGB(180, 60, 60)},
-
-    {"ReqAdm", function()
-        add(">> ReqAdmin", Color3.fromRGB(255, 220, 120))
-        fire(R.ReqAdmin)
-        fire(R.ReqAdmin, plr)
-    end, Color3.fromRGB(140, 60, 140)},
-
-    {"VIP", function()
-        add(">> UnlockVIP", Color3.fromRGB(255, 220, 120))
-        fire(R.UnlockVIP)
-        fire(R.UnlockVIP, plr)
-    end, Color3.fromRGB(180, 100, 40)},
-
-    {"Cash", function()
-        add(">> GiveCash", Color3.fromRGB(255, 220, 120))
-        invoke(R.GiveCash, AMT)
-        invoke(R.GiveCash, plr, AMT)
-    end, Color3.fromRGB(60, 140, 60)},
-
-    {"Item", function()
-        add(">> GiveItem", Color3.fromRGB(255, 220, 120))
-        invoke(R.GiveItem, "Needoh", 1)
-    end, Color3.fromRGB(60, 140, 60)},
-
-    {"Crate", function()
-        add(">> GiveCrate", Color3.fromRGB(255, 220, 120))
-        invoke(R.GiveCrate, 1)
-    end, Color3.fromRGB(60, 140, 60)},
-
-    {"Rebirth", function()
-        add(">> GiveRebirth", Color3.fromRGB(255, 220, 120))
-        invoke(R.GiveRebirth, AMT)
-    end, Color3.fromRGB(60, 140, 60)},
-
-    {"Boost", function()
-        add(">> GiveBoost", Color3.fromRGB(255, 220, 120))
-        invoke(R.GiveBoost, "Speed", 100)
-    end, Color3.fromRGB(60, 140, 60)},
-
-    {"Picks", function()
-        add(">> UnlockPicks", Color3.fromRGB(255, 220, 120))
-        invoke(R.UnlockPicks)
-    end, Color3.fromRGB(60, 140, 60)},
-
-    {"Force", function()
-        add(">> ForceGiveItem", Color3.fromRGB(255, 220, 120))
-        fire(R.ForceItem)
-        fire(R.ForceItem, plr)
-    end, Color3.fromRGB(160, 80, 80)},
-
-    {"Abuse", function()
-        add(">> ExecAbuse", Color3.fromRGB(255, 220, 120))
-        fire(R.ExecAbuse)
-        fire(R.ExecAbuse, plr)
-    end, Color3.fromRGB(160, 80, 80)},
-}
-
-for _, b in ipairs(buttons) do
-    local btn = Instance.new("TextButton")
-    btn.BackgroundColor3 = b[3]
-    btn.BorderSizePixel = 0
-    btn.Text = b[1]
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 10
-    btn.TextWrapped = true
-    btn.Parent = btnHolder
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-    btn.MouseButton1Click:Connect(function()
-        local ok, err = pcall(b[2])
-        if not ok then add("click err " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
-    end)
-end
-
--- clipboard
-local function getClip()
-    if type(setclipboard) == "function" then return setclipboard end
-    if type(syn) == "table" and type(syn.set_clipboard) == "function" then return syn.set_clipboard end
-    if type(getgenv) == "function" then
-        local g = getgenv()
-        if type(g.setclipboard) == "function" then return g.setclipboard end
-    end
-    return nil
-end
-
-copyBtn.MouseButton1Click:Connect(function()
-    local text = table.concat(lines, "\n")
-    local fn = getClip()
-    if fn then
-        local ok = pcall(fn, text)
-        copyBtn.Text = ok and "OK" or "Fail"
-    else
-        copyBtn.Text = "NoCB"
-    end
-    task.delay(1.5, function() copyBtn.Text = "Copy" end)
-end)
-
-saveBtn.MouseButton1Click:Connect(function()
-    local text = table.concat(lines, "\n")
-    if type(writefile) == "function" then
-        local fname = "admin_" .. tostring(os.time()) .. ".txt"
-        local ok = pcall(writefile, fname, text)
-        saveBtn.Text = ok and "OK" or "Fail"
-    else
-        saveBtn.Text = "NoWF"
-    end
-    task.delay(1.5, function() saveBtn.Text = "Save" end)
+-- toggle logic
+local vis = true
+toggle.MouseButton1Click:Connect(function()
+    vis = not vis
+    fr.Visible = vis
+    if not vis then modal.Visible = false end
 end)
 
 -- drag
@@ -297,14 +213,15 @@ do
     title.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1
             or i.UserInputType == Enum.UserInputType.Touch then
-            d = true; ds = i.Position; sp = frame.Position
+            d = true; ds = i.Position; sp = fr.Position
         end
     end)
     title.InputChanged:Connect(function(i)
         if d and (i.UserInputType == Enum.UserInputType.MouseMovement
             or i.UserInputType == Enum.UserInputType.Touch) then
             local v = i.Position - ds
-            frame.Position = UDim2.new(sp.X.Scale, sp.X.Offset + v.X, sp.Y.Scale, sp.Y.Offset + v.Y)
+            fr.Position = UDim2.new(sp.X.Scale, sp.X.Offset + v.X, sp.Y.Scale, sp.Y.Offset + v.Y)
+            modal.Position = fr.Position
         end
     end)
     title.InputEnded:Connect(function(i)
@@ -315,11 +232,119 @@ do
     end)
 end
 
-add("UI online", Color3.fromRGB(140, 255, 140))
-local found, miss = 0, 0
-for n, r in pairs(R) do
-    if r then found = found + 1 else miss = miss + 1; add("MISSING " .. n, Color3.fromRGB(255, 120, 120)) end
+-- watch incoming on every RemoteEvent
+local function ser(v, d)
+    d = d or 0
+    if d > 3 then return "<d>" end
+    local t = typeof(v)
+    if t == "Instance" then return "<" .. v:GetFullName() .. ">" end
+    if t == "string" then return string.format("%q", v) end
+    if t == "table" then
+        local p = {}
+        for k, val in pairs(v) do p[#p+1] = tostring(k) .. "=" .. ser(val, d+1) end
+        return "{" .. table.concat(p, ",") .. "}"
+    end
+    return tostring(v)
 end
-add("remotes " .. found .. "/" .. (found + miss), Color3.fromRGB(255, 220, 120))
-add("click a button", Color3.fromRGB(255, 220, 120))
+
+for _, r in ipairs(folder:GetChildren()) do
+    if r:IsA("RemoteEvent") then
+        r.OnClientEvent:Connect(function(...)
+            local bits = {}
+            for _, v in ipairs({...}) do bits[#bits+1] = ser(v) end
+            add("<< " .. r.Name .. "(" .. table.concat(bits, ", ") .. ")",
+                Color3.fromRGB(160, 255, 180))
+        end)
+    end
+end
+
+-- fire one target with chosen args
+local argSets = {
+    {}, {"x"}, {0}, {1}, {plr}, {plr.UserId}, {true},
+}
+
+local function makeFirer(name)
+    return function()
+        local r = folder:FindFirstChild(name)
+        if not r then
+            add(">> " .. name .. " MISSING", Color3.fromRGB(255, 120, 120))
+            return
+        end
+        if r:IsA("RemoteFunction") then
+            add(">> " .. name .. " (RF)", Color3.fromRGB(255, 220, 120))
+            local ok, res = pcall(function() return r:InvokeServer() end)
+            if ok then add("  -> " .. tostring(res), Color3.fromRGB(140, 255, 140))
+            else add("  err " .. tostring(res), Color3.fromRGB(255, 120, 120)) end
+            return
+        end
+        add(">> " .. name .. " (fire all shapes)", Color3.fromRGB(255, 220, 120))
+        for i, args in ipairs(argSets) do
+            local bits = {}
+            for _, v in ipairs(args) do bits[#bits+1] = ser(v) end
+            add("  [" .. i .. "] (" .. table.concat(bits, ", ") .. ")",
+                Color3.fromRGB(150, 160, 220))
+            pcall(r.FireServer, r, table.unpack(args))
+        end
+    end
+end
+
+for _, name in ipairs(targets) do
+    local b = Instance.new("TextButton")
+    b.BackgroundColor3 = Color3.fromRGB(60, 90, 160)
+    b.BorderSizePixel = 0
+    b.Text = name:gsub("Request", ""):gsub("Claim", "C:"):gsub("Prompt", "P:")
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 10
+    b.TextWrapped = true
+    b.ZIndex = 3
+    b.Parent = btnArea
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    local fn = makeFirer(name)
+    b.MouseButton1Click:Connect(function()
+        local ok, err = pcall(fn)
+        if not ok then add("click err " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
+    end)
+end
+
+local function copyTry(text)
+    local fns = {setclipboard, toclipboard, function()
+        return syn and syn.set_clipboard and syn.set_clipboard(text)
+    end, function()
+        return getgenv() and getgenv().setclipboard and getgenv().setclipboard(text)
+    end}
+    for i, f in ipairs(fns) do
+        if type(f) == "function" then
+            local ok = pcall(f, text)
+            if ok then return i end
+        end
+    end
+    return 0
+end
+
+copyB.MouseButton1Click:Connect(function()
+    local n = copyTry(table.concat(lines, "\n"))
+    if n > 0 then copyB.Text = "OK"
+    else bigBox.Text = table.concat(lines, "\n"); modal.Visible = true end
+    task.delay(1.5, function() copyB.Text = "Copy" end)
+end)
+
+txtB.MouseButton1Click:Connect(function()
+    bigBox.Text = table.concat(lines, "\n")
+    modal.Visible = true
+    modal.Position = fr.Position
+end)
+
+saveB.MouseButton1Click:Connect(function()
+    if type(writefile) == "function" then
+        local fname = "caps_" .. tostring(os.time()) .. ".txt"
+        pcall(writefile, fname, table.concat(lines, "\n"))
+        saveB.Text = "OK"
+    else saveB.Text = "NoWF" end
+    task.delay(1.5, function() saveB.Text = "Save" end)
+end)
+
+add("ready. " .. #targets .. " targets wired.", Color3.fromRGB(140, 255, 140))
+add("click one at a time, watch log", Color3.fromRGB(255, 220, 120))
+add("alt account.", Color3.fromRGB(255, 120, 120))
 print(">>> READY")
