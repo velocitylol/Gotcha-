@@ -1,22 +1,23 @@
+-- admin.lua
+-- Full exploit script. Load via loadstring.
+
 print(">>> start")
 
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local plr = Players.LocalPlayer
 local pg = plr:WaitForChild("PlayerGui")
-print(">>> got refs")
+print(">>> refs ok")
 
--- nuke any leftover UI
 for _, name in ipairs({"AdminUI", "RExploitUI", "RLoggerUI"}) do
     local old = pg:FindFirstChild(name)
-    if old then old:Destroy() print(">>> removed", name) end
+    if old then old:Destroy() end
 end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "AdminUI"
 gui.ResetOnSpawn = false
 gui.Parent = pg
-print(">>> gui created")
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 440, 0, 440)
@@ -25,7 +26,6 @@ frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-print(">>> frame created")
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -20, 0, 26)
@@ -45,15 +45,16 @@ log.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
 log.BorderSizePixel = 0
 log.ScrollBarThickness = 4
 log.AutomaticCanvasSize = Enum.AutomaticSize.Y
-log.CanvasSize = UDim2.new(0, 0, 0, 0)
 log.Parent = frame
 
 local ll = Instance.new("UIListLayout", log)
 ll.SortOrder = Enum.SortOrder.LayoutOrder
 ll.Padding = UDim.new(0, 2)
 local lp = Instance.new("UIPadding", log)
-lp.PaddingLeft = UDim.new(0, 6); lp.PaddingRight = UDim.new(0, 6)
-lp.PaddingTop = UDim.new(0, 6); lp.PaddingBottom = UDim.new(0, 6)
+lp.PaddingLeft = UDim.new(0, 6)
+lp.PaddingRight = UDim.new(0, 6)
+lp.PaddingTop = UDim.new(0, 6)
+lp.PaddingBottom = UDim.new(0, 6)
 
 local btnHolder = Instance.new("Frame")
 btnHolder.Size = UDim2.new(1, -20, 0, 150)
@@ -66,7 +67,6 @@ grid.CellSize = UDim2.new(0.33, -4, 0, 34)
 grid.CellPadding = UDim2.new(0, 4, 0, 4)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.Parent = btnHolder
-print(">>> layout created")
 
 local lines = {}
 local function add(t, c)
@@ -86,7 +86,6 @@ local function add(t, c)
     print(t)
 end
 
--- remote finder
 local function fr(path, name)
     local node = RS
     for _, p in ipairs(path) do
@@ -96,7 +95,7 @@ local function fr(path, name)
     return node:FindFirstChild(name)
 end
 
-local Remotes = {
+local R = {
     AddCoins    = fr({"AdminRemotes"}, "AddCoins_DevBypass"),
     GrantAdmin  = fr({"AdminRemotes"}, "GrantAdminRights"),
     ReqAdmin    = fr({"AdminRemotes"}, "RequestAdminAccess"),
@@ -105,35 +104,33 @@ local Remotes = {
     ExecAbuse   = fr({"AdminRemotes"}, "ExecuteAdminAbuse"),
 }
 local admPath = {"Library","Knit","Knit","Services","AdminService","RF"}
-Remotes.GiveCash    = fr(admPath, "GiveCash")
-Remotes.GiveItem    = fr(admPath, "GiveItem")
-Remotes.GiveCrate   = fr(admPath, "GiveCrate")
-Remotes.GiveRebirth = fr(admPath, "GiveRebirth")
-Remotes.GiveBoost   = fr(admPath, "GiveBoost")
-Remotes.UnlockPicks = fr(admPath, "UnlockAllPickaxes")
-
-print(">>> remotes looked up")
+R.GiveCash    = fr(admPath, "GiveCash")
+R.GiveItem    = fr(admPath, "GiveItem")
+R.GiveCrate   = fr(admPath, "GiveCrate")
+R.GiveRebirth = fr(admPath, "GiveRebirth")
+R.GiveBoost   = fr(admPath, "GiveBoost")
+R.UnlockPicks = fr(admPath, "UnlockAllPickaxes")
 
 local function fire(remote, ...)
-    if not remote then add("  missing remote", Color3.fromRGB(255, 120, 120)) return end
-    local args = {...}
+    if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
     local bits = {}
+    local args = {...}
     for i, v in ipairs(args) do
         if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
     end
-    add("  :FireServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
+    add("  FireServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
     local ok, err = pcall(function() remote:FireServer(...) end)
     if not ok then add("  err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
 end
 
 local function invoke(remote, ...)
-    if not remote then add("  missing remote", Color3.fromRGB(255, 120, 120)) return end
-    local args = {...}
+    if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
     local bits = {}
+    local args = {...}
     for i, v in ipairs(args) do
         if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
     end
-    add("  :InvokeServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
+    add("  InvokeServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
     local ok, r = pcall(function() return remote:InvokeServer(...) end)
     if ok then add("  -> " .. tostring(r), Color3.fromRGB(140, 255, 140))
     else add("  err: " .. tostring(r), Color3.fromRGB(255, 120, 120)) end
@@ -141,77 +138,75 @@ end
 
 local AMT = 1000000
 
-local function bAddCoins()
-    add(">> AddCoins", Color3.fromRGB(255, 220, 120))
-    fire(Remotes.AddCoins, AMT)
-    fire(Remotes.AddCoins, plr, AMT)
-    fire(Remotes.AddCoins, AMT, plr)
-    fire(Remotes.AddCoins, {amount = AMT})
-end
-local function bGrant()
-    add(">> GrantAdmin", Color3.fromRGB(255, 220, 120))
-    fire(Remotes.GrantAdmin)
-    fire(Remotes.GrantAdmin, plr)
-end
-local function bReqAdmin()
-    add(">> ReqAdmin", Color3.fromRGB(255, 220, 120))
-    fire(Remotes.ReqAdmin)
-    fire(Remotes.ReqAdmin, plr)
-end
-local function bVIP()
-    add(">> UnlockVIP", Color3.fromRGB(255, 220, 120))
-    fire(Remotes.UnlockVIP)
-    fire(Remotes.UnlockVIP, plr)
-end
-local function bGiveCash()
-    add(">> GiveCash", Color3.fromRGB(255, 220, 120))
-    invoke(Remotes.GiveCash, AMT)
-    invoke(Remotes.GiveCash, plr, AMT)
-end
-local function bGiveItem()
-    add(">> GiveItem", Color3.fromRGB(255, 220, 120))
-    invoke(Remotes.GiveItem, "Needoh", 1)
-end
-local function bGiveCrate()
-    add(">> GiveCrate", Color3.fromRGB(255, 220, 120))
-    invoke(Remotes.GiveCrate, 1)
-end
-local function bGiveRebirth()
-    add(">> GiveRebirth", Color3.fromRGB(255, 220, 120))
-    invoke(Remotes.GiveRebirth, AMT)
-end
-local function bGiveBoost()
-    add(">> GiveBoost", Color3.fromRGB(255, 220, 120))
-    invoke(Remotes.GiveBoost, "Speed", 100)
-end
-local function bPicks()
-    add(">> UnlockAllPickaxes", Color3.fromRGB(255, 220, 120))
-    invoke(Remotes.UnlockPicks)
-end
-local function bForceItem()
-    add(">> ForceGiveItem", Color3.fromRGB(255, 220, 120))
-    fire(Remotes.ForceItem)
-    fire(Remotes.ForceItem, plr)
-end
-local function bExec()
-    add(">> ExecuteAdminAbuse", Color3.fromRGB(255, 220, 120))
-    fire(Remotes.ExecAbuse)
-    fire(Remotes.ExecAbuse, plr)
-end
-
 local buttons = {
-    {"AddCoins", bAddCoins, Color3.fromRGB(180, 60, 60)},
-    {"Grant Admin", bGrant, Color3.fromRGB(180, 60, 60)},
-    {"Req Admin", bReqAdmin, Color3.fromRGB(140, 60, 140)},
-    {"Unlock VIP", bVIP, Color3.fromRGB(180, 100, 40)},
-    {"GiveCash", bGiveCash, Color3.fromRGB(60, 140, 60)},
-    {"GiveItem", bGiveItem, Color3.fromRGB(60, 140, 60)},
-    {"GiveCrate", bGiveCrate, Color3.fromRGB(60, 140, 60)},
-    {"GiveRebirth", bGiveRebirth, Color3.fromRGB(60, 140, 60)},
-    {"GiveBoost", bGiveBoost, Color3.fromRGB(60, 140, 60)},
-    {"All Picks", bPicks, Color3.fromRGB(60, 140, 60)},
-    {"ForceItem", bForceItem, Color3.fromRGB(160, 80, 80)},
-    {"ExecAbuse", bExec, Color3.fromRGB(160, 80, 80)},
+    {"AddCoins", function()
+        add(">> AddCoins", Color3.fromRGB(255, 220, 120))
+        fire(R.AddCoins, AMT)
+        fire(R.AddCoins, plr, AMT)
+        fire(R.AddCoins, AMT, plr)
+        fire(R.AddCoins, {amount = AMT})
+    end, Color3.fromRGB(180, 60, 60)},
+
+    {"Grant Admin", function()
+        add(">> GrantAdmin", Color3.fromRGB(255, 220, 120))
+        fire(R.GrantAdmin)
+        fire(R.GrantAdmin, plr)
+    end, Color3.fromRGB(180, 60, 60)},
+
+    {"Req Admin", function()
+        add(">> ReqAdmin", Color3.fromRGB(255, 220, 120))
+        fire(R.ReqAdmin)
+        fire(R.ReqAdmin, plr)
+    end, Color3.fromRGB(140, 60, 140)},
+
+    {"Unlock VIP", function()
+        add(">> UnlockVIP", Color3.fromRGB(255, 220, 120))
+        fire(R.UnlockVIP)
+        fire(R.UnlockVIP, plr)
+    end, Color3.fromRGB(180, 100, 40)},
+
+    {"GiveCash", function()
+        add(">> GiveCash", Color3.fromRGB(255, 220, 120))
+        invoke(R.GiveCash, AMT)
+        invoke(R.GiveCash, plr, AMT)
+    end, Color3.fromRGB(60, 140, 60)},
+
+    {"GiveItem", function()
+        add(">> GiveItem", Color3.fromRGB(255, 220, 120))
+        invoke(R.GiveItem, "Needoh", 1)
+    end, Color3.fromRGB(60, 140, 60)},
+
+    {"GiveCrate", function()
+        add(">> GiveCrate", Color3.fromRGB(255, 220, 120))
+        invoke(R.GiveCrate, 1)
+    end, Color3.fromRGB(60, 140, 60)},
+
+    {"GiveRebirth", function()
+        add(">> GiveRebirth", Color3.fromRGB(255, 220, 120))
+        invoke(R.GiveRebirth, AMT)
+    end, Color3.fromRGB(60, 140, 60)},
+
+    {"GiveBoost", function()
+        add(">> GiveBoost", Color3.fromRGB(255, 220, 120))
+        invoke(R.GiveBoost, "Speed", 100)
+    end, Color3.fromRGB(60, 140, 60)},
+
+    {"All Picks", function()
+        add(">> UnlockAllPickaxes", Color3.fromRGB(255, 220, 120))
+        invoke(R.UnlockPicks)
+    end, Color3.fromRGB(60, 140, 60)},
+
+    {"ForceItem", function()
+        add(">> ForceGiveItem", Color3.fromRGB(255, 220, 120))
+        fire(R.ForceItem)
+        fire(R.ForceItem, plr)
+    end, Color3.fromRGB(160, 80, 80)},
+
+    {"ExecAbuse", function()
+        add(">> ExecuteAdminAbuse", Color3.fromRGB(255, 220, 120))
+        fire(R.ExecAbuse)
+        fire(R.ExecAbuse, plr)
+    end, Color3.fromRGB(160, 80, 80)},
 }
 
 for _, b in ipairs(buttons) do
@@ -231,13 +226,11 @@ for _, b in ipairs(buttons) do
     end)
 end
 
-print(">>> buttons built")
-
 add("UI online", Color3.fromRGB(140, 255, 140))
 local found, miss = 0, 0
-for n, r in pairs(Remotes) do
+for n, r in pairs(R) do
     if r then found = found + 1 else miss = miss + 1; add("MISSING " .. n, Color3.fromRGB(255, 120, 120)) end
 end
-add("remotes: " .. found .. " found / " .. miss .. " missing", Color3.fromRGB(255, 220, 120))
-add("click a button, watch log", Color3.fromRGB(255, 220, 120))
+add("remotes: " .. found .. " / " .. miss, Color3.fromRGB(255, 220, 120))
+add("click a button", Color3.fromRGB(255, 220, 120))
 print(">>> READY")
