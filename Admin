@@ -1,3 +1,6 @@
+-- admin.lua
+-- Full exploit script. Load via loadstring.
+
 print(">>> start")
 
 local Players = game:GetService("Players")
@@ -110,25 +113,25 @@ R.UnlockPicks = fr(admPath, "UnlockAllPickaxes")
 
 local function fire(remote, ...)
     if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
-    local bits = {}
     local args = {...}
+    local bits = {}
     for i, v in ipairs(args) do
         if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
     end
     add("  FireServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
-    local ok, err = pcall(function() remote:FireServer(...) end)
+    local ok, err = pcall(remote.FireServer, remote, ...)
     if not ok then add("  err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
 end
 
 local function invoke(remote, ...)
     if not remote then add("  missing", Color3.fromRGB(255, 120, 120)) return end
-    local bits = {}
     local args = {...}
+    local bits = {}
     for i, v in ipairs(args) do
         if typeof(v) == "Instance" then bits[i] = v:GetFullName() else bits[i] = tostring(v) end
     end
     add("  InvokeServer(" .. table.concat(bits, ", ") .. ")", Color3.fromRGB(150, 160, 220))
-    local ok, r = pcall(function() return remote:InvokeServer(...) end)
+    local ok, r = pcall(remote.InvokeServer, remote, ...)
     if ok then add("  -> " .. tostring(r), Color3.fromRGB(140, 255, 140))
     else add("  err: " .. tostring(r), Color3.fromRGB(255, 120, 120)) end
 end
