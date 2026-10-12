@@ -165,26 +165,21 @@ old = hookmetamethod(game, "__namecall", function(self, ...)
         end
         if type(a[2]) == "string" and not capturedCmds[a[2]] then
             capturedCmds[a[2]] = true
-            local extra = ""
-            if a[3] ~= nil then
-                if type(a[3]) == "table" then
-                    local p = {}
-                    for k, val in pairs(a[3]) do p[#p+1] = tostring(k) .. "=" .. tostring(val) end
-                    extra = "  {" .. table.concat(p, ",") .. "}"
-                else
-                    extra = "  " .. tostring(a[3])
-                end
-            end
-            add(">> " .. a[2] .. extra, Color3.fromRGB(255, 220, 120))
+            add(">> " .. a[2], Color3.fromRGB(255, 220, 120))
         end
     end
     return old(self, ...)
 end)
 
-local function fire(cmd, ...)
-    if not KEY then add("no key yet", Color3.fromRGB(255, 120, 120)) return end
-    local args = {...}
-    pcall(function() remote:FireServer(KEY, cmd, table.unpack(args)) end)
+local function fire(cmd, a1, a2)
+    if not KEY then return end
+    if a2 ~= nil then
+        pcall(remote.FireServer, remote, KEY, cmd, a1, a2)
+    elseif a1 ~= nil then
+        pcall(remote.FireServer, remote, KEY, cmd, a1)
+    else
+        pcall(remote.FireServer, remote, KEY, cmd)
+    end
 end
 
 local function nearestTarget()
@@ -213,14 +208,7 @@ local function killOne()
     local me = plr.Character
     if not me then return end
     add(">> kill " .. char.Name, Color3.fromRGB(255, 80, 80))
-    fire("Main_Damger_OC_R", char, {F = me, D = 9999})
     fire("Main_Damger_OC_R", char, {F = me, D = 999999})
-    fire("Main_Damger_OC_R", char, {[1] = char, [2] = {F = me, D = 999999}})
-    fire("Main_Damger_OC_R", {char, {F = me, D = 999999}})
-    fire("Damage", char, 999999)
-    fire("DealDamage", char, 999999)
-    fire("Main_Damage", char, {F = me, D = 999999})
-    fire("Hit", char, {F = me, D = 999999})
 end
 
 local function killAll()
