@@ -1,182 +1,104 @@
-print(">>> start")
-
 local RS = game:GetService("ReplicatedStorage")
 local plr = game:GetService("Players").LocalPlayer
 local pg = plr:WaitForChild("PlayerGui")
 
-for _, n in ipairs({"CapUI", "ScanUI", "ExpUI", "DumpUI"}) do
-    local o = pg:FindFirstChild(n)
-    if o then o:Destroy() end
+local function host()
+    if type(gethui) == "function" then
+        local ok, h = pcall(gethui)
+        if ok and h then return h end
+    end
+    return pg
 end
 
-local folder = RS:FindFirstChild("Remotes")
-if not folder then warn("no Remotes folder") return end
+local parent = host()
+local old = parent:FindFirstChild("KillUI")
+if old then old:Destroy() end
 
--- one target per click, single fire
-local targets = {
-    "ClaimFreeGift",
-    "ClaimOfflineReward",
-    "ClaimIndexReward",
-    "ClaimAreaIndexReward",
-    "ClaimFullIndexReward",
-    "ClaimAllIndexRewards",
-    "CashBoost",
-    "BoxLuck",
-    "BoxSizeBoost",
-    "SellPets",
-    "RequestShopPurchase",
-    "RequestTrailPurchase",
-    "BossShopBuy",
-    "UpgradeTreadmill",
-    "UpgradeBase",
-    "SpeedOffer",
-    "PromptTreadmillRobuxUpgrade",
-    "PromptBaseRobuxUpgrade",
-}
+local folder = RS:FindFirstChild("ALLREMBINDS")
+if not folder then warn("no ALLREMBINDS") return end
+local remote = folder:FindFirstChild("Pls_Dont_Hack_Plssssssssss")
+if not remote then warn("no remote") return end
 
--- read-only RFs for state
-local readRFs = {
-    "FusePets",
-    "MutatePet",
-}
+local KEY = nil
 
--- ============ UI ============
 local gui = Instance.new("ScreenGui")
-gui.Name = "CapUI"
+gui.Name = "KillUI"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.Parent = pg
+gui.DisplayOrder = 2147483647
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = parent
 
+-- toggle dot
 local toggle = Instance.new("TextButton")
-toggle.Size = UDim2.new(0, 36, 0, 36)
-toggle.Position = UDim2.new(0, 10, 0.5, -18)
-toggle.BackgroundColor3 = Color3.fromRGB(55, 110, 200)
+toggle.Size = UDim2.new(0, 30, 0, 30)
+toggle.Position = UDim2.new(0, 8, 0.5, -15)
+toggle.BackgroundColor3 = Color3.fromRGB(220, 40, 40)
 toggle.BackgroundTransparency = 0.5
 toggle.BorderSizePixel = 0
 toggle.Text = "T"
 toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggle.TextTransparency = 0.5
 toggle.Font = Enum.Font.GothamBold
-toggle.TextSize = 16
-toggle.ZIndex = 50
+toggle.TextSize = 14
+toggle.ZIndex = 200
 toggle.Parent = gui
-Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 18)
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 15)
 
 local fr = Instance.new("Frame")
-fr.Name = "Main"
-fr.Size = UDim2.new(0, 420, 0, 500)
-fr.Position = UDim2.new(0.5, -210, 0.5, -250)
-fr.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+fr.Size = UDim2.new(0, 320, 0, 320)
+fr.Position = UDim2.new(0.5, -160, 0.5, -160)
+fr.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
 fr.BorderSizePixel = 0
-fr.ZIndex = 2
+fr.ZIndex = 100
 fr.Parent = gui
-Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 6)
-local stroke = Instance.new("UIStroke", fr)
-stroke.Color = Color3.fromRGB(60, 60, 90)
+Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 8)
+local st = Instance.new("UIStroke", fr)
+st.Color = Color3.fromRGB(220, 40, 40)
+st.Thickness = 1.5
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -240, 0, 22)
+title.Size = UDim2.new(1, -16, 0, 18)
 title.Position = UDim2.new(0, 8, 0, 4)
 title.BackgroundTransparency = 1
-title.Text = "PetSim  [drag]"
-title.TextColor3 = Color3.fromRGB(220, 220, 240)
+title.Text = "kill  [drag]"
+title.TextColor3 = Color3.fromRGB(240, 220, 220)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
-title.TextSize = 12
-title.ZIndex = 3
+title.TextSize = 11
+title.ZIndex = 101
 title.Parent = fr
 
-local function mkBtn(t, x, c, parent)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 70, 0, 22)
-    b.Position = UDim2.new(1, x, 0, 4)
-    b.BackgroundColor3 = c
-    b.BorderSizePixel = 0
-    b.Text = t
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 11
-    b.ZIndex = 3
-    b.Parent = parent or fr
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    return b
-end
-
-local copyB = mkBtn("Copy", -176, Color3.fromRGB(55, 110, 200))
-local txtB  = mkBtn("Text", -102, Color3.fromRGB(140, 90, 40))
-local saveB = mkBtn("Save", -28,  Color3.fromRGB(55, 55, 70))
-
-local btnArea = Instance.new("Frame")
-btnArea.Size = UDim2.new(1, -16, 0, 200)
-btnArea.Position = UDim2.new(0, 8, 0, 30)
-btnArea.BackgroundTransparency = 1
-btnArea.ZIndex = 3
-btnArea.Parent = fr
-
-local grid = Instance.new("UIGridLayout")
-grid.CellSize = UDim2.new(0.33, -3, 0, 26)
-grid.CellPadding = UDim2.new(0, 4, 0, 3)
-grid.SortOrder = Enum.SortOrder.LayoutOrder
-grid.Parent = btnArea
+local keyLabel = Instance.new("TextLabel")
+keyLabel.Size = UDim2.new(1, -16, 0, 14)
+keyLabel.Position = UDim2.new(0, 8, 0, 22)
+keyLabel.BackgroundTransparency = 1
+keyLabel.Text = "key: waiting..."
+keyLabel.TextColor3 = Color3.fromRGB(255, 200, 120)
+keyLabel.TextXAlignment = Enum.TextXAlignment.Left
+keyLabel.Font = Enum.Font.Code
+keyLabel.TextSize = 9
+keyLabel.TextTruncate = Enum.TextTruncate.AtEnd
+keyLabel.ZIndex = 101
+keyLabel.Parent = fr
 
 local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -16, 1, -244)
-scroll.Position = UDim2.new(0, 8, 0, 236)
-scroll.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+scroll.Size = UDim2.new(1, -16, 1, -126)
+scroll.Position = UDim2.new(0, 8, 0, 40)
+scroll.BackgroundColor3 = Color3.fromRGB(6, 6, 10)
 scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 3
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.ZIndex = 3
+scroll.ZIndex = 101
 scroll.Parent = fr
-
 local ll = Instance.new("UIListLayout", scroll)
 ll.SortOrder = Enum.SortOrder.LayoutOrder
 ll.Padding = UDim.new(0, 1)
 local lp = Instance.new("UIPadding", scroll)
-lp.PaddingLeft = UDim.new(0, 4); lp.PaddingRight = UDim.new(0, 4)
-lp.PaddingTop = UDim.new(0, 4); lp.PaddingBottom = UDim.new(0, 4)
-
--- text modal
-local modal = Instance.new("Frame")
-modal.Size = fr.Size
-modal.Position = fr.Position
-modal.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-modal.BorderSizePixel = 0
-modal.Visible = false
-modal.ZIndex = 10
-modal.Parent = gui
-Instance.new("UICorner", modal).CornerRadius = UDim.new(0, 6)
-
-local cbtn = Instance.new("TextButton")
-cbtn.Size = UDim2.new(0, 70, 0, 22)
-cbtn.Position = UDim2.new(1, -78, 0, 4)
-cbtn.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
-cbtn.BorderSizePixel = 0
-cbtn.Text = "Close"
-cbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-cbtn.Font = Enum.Font.GothamBold
-cbtn.TextSize = 11
-cbtn.ZIndex = 11
-cbtn.Parent = modal
-Instance.new("UICorner", cbtn).CornerRadius = UDim.new(0, 4)
-cbtn.MouseButton1Click:Connect(function() modal.Visible = false end)
-
-local bigBox = Instance.new("TextBox")
-bigBox.Size = UDim2.new(1, -16, 1, -34)
-bigBox.Position = UDim2.new(0, 8, 0, 30)
-bigBox.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
-bigBox.BorderSizePixel = 0
-bigBox.TextColor3 = Color3.fromRGB(200, 200, 210)
-bigBox.Font = Enum.Font.Code
-bigBox.TextSize = 10
-bigBox.TextXAlignment = Enum.TextXAlignment.Left
-bigBox.TextYAlignment = Enum.TextYAlignment.Top
-bigBox.TextWrapped = true
-bigBox.ClearTextOnFocus = false
-bigBox.MultiLine = true
-bigBox.Text = ""
-bigBox.ZIndex = 11
-bigBox.Parent = modal
+lp.PaddingLeft = UDim.new(0, 4)
+lp.PaddingRight = UDim.new(0, 4)
+lp.PaddingTop = UDim.new(0, 4)
+lp.PaddingBottom = UDim.new(0, 4)
 
 local lines = {}
 local function add(t, c)
@@ -187,164 +109,200 @@ local function add(t, c)
     l.Text = tostring(t)
     l.TextColor3 = c or Color3.fromRGB(200, 200, 210)
     l.Font = Enum.Font.Code
-    l.TextSize = 10
+    l.TextSize = 9
     l.TextXAlignment = Enum.TextXAlignment.Left
     l.TextWrapped = true
     l.LayoutOrder = #lines + 1
-    l.ZIndex = 3
+    l.ZIndex = 101
     l.Parent = scroll
     lines[#lines + 1] = tostring(t)
+    print(t)
     task.defer(function()
         scroll.CanvasPosition = Vector2.new(0, math.max(0, ll.AbsoluteContentSize.Y - scroll.AbsoluteSize.Y))
     end)
 end
 
--- toggle logic
 local vis = true
 toggle.MouseButton1Click:Connect(function()
     vis = not vis
     fr.Visible = vis
-    if not vis then modal.Visible = false end
 end)
 
--- drag
-do
-    local d, ds, sp
-    title.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1
-            or i.UserInputType == Enum.UserInputType.Touch then
-            d = true; ds = i.Position; sp = fr.Position
-        end
-    end)
-    title.InputChanged:Connect(function(i)
-        if d and (i.UserInputType == Enum.UserInputType.MouseMovement
-            or i.UserInputType == Enum.UserInputType.Touch) then
-            local v = i.Position - ds
-            fr.Position = UDim2.new(sp.X.Scale, sp.X.Offset + v.X, sp.Y.Scale, sp.Y.Offset + v.Y)
-            modal.Position = fr.Position
-        end
-    end)
-    title.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1
-            or i.UserInputType == Enum.UserInputType.Touch then
-            d = false
-        end
-    end)
-end
-
--- watch incoming on every RemoteEvent
-local function ser(v, d)
-    d = d or 0
-    if d > 3 then return "<d>" end
-    local t = typeof(v)
-    if t == "Instance" then return "<" .. v:GetFullName() .. ">" end
-    if t == "string" then return string.format("%q", v) end
-    if t == "table" then
-        local p = {}
-        for k, val in pairs(v) do p[#p+1] = tostring(k) .. "=" .. ser(val, d+1) end
-        return "{" .. table.concat(p, ",") .. "}"
+local dragging, dragStart, startPos
+title.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1
+        or i.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = i.Position
+        startPos = fr.Position
     end
-    return tostring(v)
-end
-
-for _, r in ipairs(folder:GetChildren()) do
-    if r:IsA("RemoteEvent") then
-        r.OnClientEvent:Connect(function(...)
-            local bits = {}
-            for _, v in ipairs({...}) do bits[#bits+1] = ser(v) end
-            add("<< " .. r.Name .. "(" .. table.concat(bits, ", ") .. ")",
-                Color3.fromRGB(160, 255, 180))
-        end)
+end)
+title.InputChanged:Connect(function(i)
+    if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement
+        or i.UserInputType == Enum.UserInputType.Touch) then
+        local v = i.Position - dragStart
+        fr.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + v.X,
+                                startPos.Y.Scale, startPos.Y.Offset + v.Y)
     end
-end
+end)
+title.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1
+        or i.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
 
--- fire one target with chosen args
-local argSets = {
-    {}, {"x"}, {0}, {1}, {plr}, {plr.UserId}, {true},
-}
-
-local function makeFirer(name)
-    return function()
-        local r = folder:FindFirstChild(name)
-        if not r then
-            add(">> " .. name .. " MISSING", Color3.fromRGB(255, 120, 120))
-            return
+local capturedCmds = {}
+local old
+old = hookmetamethod(game, "__namecall", function(self, ...)
+    local m = getnamecallmethod()
+    if self == remote and m == "FireServer" then
+        local a = {...}
+        if not KEY and type(a[1]) == "string" and #a[1] > 20 then
+            KEY = a[1]
+            keyLabel.Text = "key: " .. KEY
+            keyLabel.TextColor3 = Color3.fromRGB(140, 255, 140)
+            add("KEY CAPTURED: " .. KEY, Color3.fromRGB(140, 255, 140))
         end
-        if r:IsA("RemoteFunction") then
-            add(">> " .. name .. " (RF)", Color3.fromRGB(255, 220, 120))
-            local ok, res = pcall(function() return r:InvokeServer() end)
-            if ok then add("  -> " .. tostring(res), Color3.fromRGB(140, 255, 140))
-            else add("  err " .. tostring(res), Color3.fromRGB(255, 120, 120)) end
-            return
-        end
-        add(">> " .. name .. " (fire all shapes)", Color3.fromRGB(255, 220, 120))
-        for i, args in ipairs(argSets) do
-            local bits = {}
-            for _, v in ipairs(args) do bits[#bits+1] = ser(v) end
-            add("  [" .. i .. "] (" .. table.concat(bits, ", ") .. ")",
-                Color3.fromRGB(150, 160, 220))
-            pcall(r.FireServer, r, table.unpack(args))
+        if type(a[2]) == "string" and not capturedCmds[a[2]] then
+            capturedCmds[a[2]] = true
+            local extra = ""
+            if a[3] ~= nil then
+                if type(a[3]) == "table" then
+                    local p = {}
+                    for k, val in pairs(a[3]) do p[#p+1] = tostring(k) .. "=" .. tostring(val) end
+                    extra = "  {" .. table.concat(p, ",") .. "}"
+                else
+                    extra = "  " .. tostring(a[3])
+                end
+            end
+            add(">> " .. a[2] .. extra, Color3.fromRGB(255, 220, 120))
         end
     end
+    return old(self, ...)
+end)
+
+local function fire(cmd, ...)
+    if not KEY then add("no key yet", Color3.fromRGB(255, 120, 120)) return end
+    pcall(function() remote:FireServer(KEY, cmd, ...) end)
 end
 
-for _, name in ipairs(targets) do
+local function nearestTarget()
+    local me = plr.Character
+    if not me then return nil end
+    local myPos = me:GetPivot().Position
+    local best, bestDist = nil, math.huge
+    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= plr and p.Character then
+            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local d = (hrp.Position - myPos).Magnitude
+                if d < bestDist then
+                    best, bestDist = p.Character, d
+                end
+            end
+        end
+    end
+    return best
+end
+
+local function killOne()
+    if not KEY then add("no key yet", Color3.fromRGB(255, 120, 120)) return end
+    local char = nearestTarget()
+    if not char then add("no target", Color3.fromRGB(255, 120, 120)) return end
+    local me = plr.Character
+    if not me then return end
+    add(">> kill " .. char.Name, Color3.fromRGB(255, 80, 80))
+    fire("Main_Damger_OC_R", char, {F = me, D = 9999})
+    fire("Main_Damger_OC_R", char, {F = me, D = 999999})
+    fire("Main_Damger_OC_R", char, {1 = char, 2 = {F = me, D = 999999}})
+    fire("Main_Damger_OC_R", {char, {F = me, D = 999999}})
+    fire("Damage", char, 999999)
+    fire("DealDamage", char, 999999)
+    fire("Main_Damage", char, {F = me, D = 999999})
+    fire("Hit", char, {F = me, D = 999999})
+end
+
+local function killAll()
+    if not KEY then add("no key yet", Color3.fromRGB(255, 120, 120)) return end
+    add("=== KILL ALL ===", Color3.fromRGB(255, 80, 80))
+    local me = plr.Character
+    if not me then return end
+    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= plr and p.Character then
+            add("  " .. p.Name, Color3.fromRGB(255, 140, 120))
+            fire("Main_Damger_OC_R", p.Character, {F = me, D = 999999})
+        end
+    end
+end
+
+local function spamDmg()
+    if not KEY then add("no key yet", Color3.fromRGB(255, 120, 120)) return end
+    local char = nearestTarget()
+    if not char then return end
+    local me = plr.Character
+    if not me then return end
+    add("=== SPAM " .. char.Name .. " ===", Color3.fromRGB(255, 80, 80))
+    task.spawn(function()
+        for i = 1, 60 do
+            if not char.Parent then break end
+            fire("Main_Damger_OC_R", char, {F = me, D = 999999})
+            task.wait(0.03)
+        end
+    end)
+end
+
+local function dumpCaptured()
+    add("=== captured ===", Color3.fromRGB(255, 220, 120))
+    for k, _ in pairs(capturedCmds) do
+        add("  " .. k, Color3.fromRGB(200, 200, 220))
+    end
+end
+
+local function mkBtn(txt, x, y, w, c, cb)
     local b = Instance.new("TextButton")
-    b.BackgroundColor3 = Color3.fromRGB(60, 90, 160)
+    b.Size = UDim2.new(0, w, 0, 22)
+    b.Position = UDim2.new(0, x, 0, y)
+    b.BackgroundColor3 = c
     b.BorderSizePixel = 0
-    b.Text = name:gsub("Request", ""):gsub("Claim", "C:"):gsub("Prompt", "P:")
+    b.Text = txt
     b.TextColor3 = Color3.fromRGB(255, 255, 255)
     b.Font = Enum.Font.GothamBold
     b.TextSize = 10
-    b.TextWrapped = true
-    b.ZIndex = 3
-    b.Parent = btnArea
+    b.ZIndex = 101
+    b.Parent = fr
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    local fn = makeFirer(name)
     b.MouseButton1Click:Connect(function()
-        local ok, err = pcall(fn)
-        if not ok then add("click err " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
+        local ok, err = pcall(cb)
+        if not ok then add("err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
     end)
 end
 
-local function copyTry(text)
-    local fns = {setclipboard, toclipboard, function()
-        return syn and syn.set_clipboard and syn.set_clipboard(text)
-    end, function()
-        return getgenv() and getgenv().setclipboard and getgenv().setclipboard(text)
-    end}
-    for i, f in ipairs(fns) do
+mkBtn("kill near",  8,   226, 100, Color3.fromRGB(200, 30, 30),  killOne)
+mkBtn("kill all",   116, 226, 100, Color3.fromRGB(220, 20, 20),  killAll)
+mkBtn("spam dmg",   224, 226, 88,  Color3.fromRGB(200, 30, 30),  spamDmg)
+mkBtn("dump",       8,   252, 100, Color3.fromRGB(140, 100, 40), dumpCaptured)
+mkBtn("clear",      116, 252, 100, Color3.fromRGB(80, 80, 100),  function()
+    for _, c in ipairs(scroll:GetChildren()) do
+        if c:IsA("TextLabel") then c:Destroy() end
+    end
+    lines = {}
+end)
+mkBtn("close",      224, 252, 88,  Color3.fromRGB(80, 60, 80),   function() gui:Destroy() end)
+mkBtn("copy log",   8,   280, 100, Color3.fromRGB(55, 110, 200), function()
+    local fns = {setclipboard, toclipboard}
+    for _, f in ipairs(fns) do
         if type(f) == "function" then
-            local ok = pcall(f, text)
-            if ok then return i end
+            if pcall(f, table.concat(lines, "\n")) then
+                add("copied", Color3.fromRGB(140, 255, 140))
+                return
+            end
         end
     end
-    return 0
-end
-
-copyB.MouseButton1Click:Connect(function()
-    local n = copyTry(table.concat(lines, "\n"))
-    if n > 0 then copyB.Text = "OK"
-    else bigBox.Text = table.concat(lines, "\n"); modal.Visible = true end
-    task.delay(1.5, function() copyB.Text = "Copy" end)
 end)
 
-txtB.MouseButton1Click:Connect(function()
-    bigBox.Text = table.concat(lines, "\n")
-    modal.Visible = true
-    modal.Position = fr.Position
-end)
-
-saveB.MouseButton1Click:Connect(function()
-    if type(writefile) == "function" then
-        local fname = "caps_" .. tostring(os.time()) .. ".txt"
-        pcall(writefile, fname, table.concat(lines, "\n"))
-        saveB.Text = "OK"
-    else saveB.Text = "NoWF" end
-    task.delay(1.5, function() saveB.Text = "Save" end)
-end)
-
-add("ready. " .. #targets .. " targets wired.", Color3.fromRGB(140, 255, 140))
-add("click one at a time, watch log", Color3.fromRGB(255, 220, 120))
-add("alt account.", Color3.fromRGB(255, 120, 120))
-print(">>> READY")
+add("ready.", Color3.fromRGB(140, 255, 140))
+add("1. play -> wait for KEY CAPTURED", Color3.fromRGB(255, 220, 120))
+add("2. click kill near", Color3.fromRGB(255, 220, 120))
+add("3. if fail, dump + copy log", Color3.fromRGB(255, 220, 120))
+print("ready")
